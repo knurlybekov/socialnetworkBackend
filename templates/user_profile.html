@@ -1,0 +1,121 @@
+<!-- user_profile.html -->
+{% extends "base.html" %}
+{% block css %}
+.container {
+    display: flex; /* Enable flexbox layout */
+}
+
+.user-info-container {
+    width: 25%; /* Set user info to 25% width */
+    padding: 20px;
+    border-right: 1px solid #ddd; /* Optional border to separate sections */
+}
+
+.posts-container {
+    width: 75%; /* Set posts to 75% width */
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap; /* Allow posts to wrap to the next line */
+    gap: 20px;       /* Add spacing between post containers */
+}
+
+.post {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow */
+    flex: 1 1 300px; /* Allow posts to grow and shrink, with a minimum width of 300px */
+}
+    .profile-image {
+    max-width: 200px; /* Adjust the maximum width as needed */
+    max-height: 200px; /* Adjust the maximum height as needed */
+    width: auto; /* Maintain aspect ratio */
+    height: auto;
+}
+    .comments-section {
+    /* Styles for the entire comment section */
+}
+
+.comment-form-container {
+    /* Styles for the comment form container */
+    margin-top: 20px;
+    border-top: 1px dashed #ccc;
+    padding-top: 20px;
+}
+
+.comment {
+    /* Styles for individual comments */
+    margin-bottom: 10px;
+    padding: 10px;
+    border-bottom: 1px dotted #ccc;
+}
+
+.comment p {
+    margin: 5px 0; /* Adjust margin as needed */
+}
+{% endblock %}
+{% block title %}User Profile{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div class="user-info-container">
+        <h1>User Profile</h1>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Full Name:</strong> {{ user.get_full_name }}</p>
+        <p><strong>Date Joined:</strong> {{ user.date_joined|date:"Y-m-d" }}</p>
+        <p><strong>Last Online:</strong> {{ user.last_online|date:"Y-m-d H:i" }}</p>
+        <a href="{% url 'account_logout' %}" style="color: red">Logout</a>
+        <a href="{% url 'edit_profile' %}">Edit Profile</a>
+
+        {% if user.image %}
+<img src="{{ user.image.url }}" alt="Profile image of {{ user.get_full_name }}" class="profile-image">
+        {% else %}
+            <p>No profile image available.</p>
+        {% endif %}
+    </div>
+
+     <div class="posts-container">
+        <h2>Posts</h2>
+        {% for post in posts %}
+            <div class="post">
+                <h3>{{ post.title }}</h3>
+                <p>{{ post.content }}</p>
+                <p>Posted on: {{ post.timestamp }}</p>
+                <button class="like-btn" data-post-id="{{ post.id }}">
+        {% if request.user in post.likes.all %}
+            Unlike ({{ post.likes.count }})
+        {% else %}
+            Like ({{ post.likes.count }})
+        {% endif %}
+    </button>
+                <a href="{% url 'post_detail' pk=post.pk %}">View Details</a>
+            <div class="comments-section">
+        <h3>Comments ({{ comments.count }})</h3>
+        {% for comment in comments %}
+            <div class="comment">
+                <p>{{ comment.author.username }}:</p>
+                <p>{{ comment.content }}</p>
+                <p>Posted on: {{ comment.created_at }}</p>
+            </div>
+        {% empty %}
+            <p>No comments yet.</p>
+        {% endfor %}
+
+        {% if user.is_authenticated %}
+            <div class="comment-form-container">
+                <h4>Add a Comment</h4>
+                <form method="post" action="{% url 'add_comment' post.pk %}">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit">Post Comment</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

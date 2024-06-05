@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block css %}
+    .subscribe-btn {
+    background: linear-gradient(to right, #4CAF50, #2E8B57); /* Green gradient */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    /* Add other styling as needed */
+}
+.unsubscribe-btn {
+    background-color: #DC143C; /* Red color */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+{% endblock %}
+
+{% block content %}
+{% if results %}
+    <h2>Search Results for "{{ query }}"</h2>
+    <ul>
+    {% for user in results %}
+        <li>
+            {{ user.full_name }} ({{ user.email }})
+            {% if user != request.user %}
+                {% if user.is_followed %}
+                    <button class="unsubscribe-btn" data-user-id="{{ user.id }}">Unfollow</button>
+                {% else %}
+                    <button class="subscribe-btn" data-user-id="{{ user.id }}">Follow</button>
+                {% endif %}
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No results found.</p>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'jquery-3.6.4.min.js' %}"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script>
+    $('.subscribe-btn, .unsubscribe-btn').click(function(event) {
+        var button = $(this);
+        var url = button.hasClass('subscribe-btn') ? '/follow/' : '/unfollow/';  // Determine the correct URL
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: {
+                following_user_id: button.data('user-id'),  // Use following_user_id
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                if (data.success) {
+                    if (button.hasClass('subscribe-btn')) {
+                        button.text('Unfollow').removeClass('subscribe-btn').addClass('unsubscribe-btn');
+                    } else {
+                        button.text('Follow').removeClass('unsubscribe-btn').addClass('subscribe-btn');
+                    }
+                } else {
+                    // Handle error if needed (e.g., display an error message)
+                }
+            }
+        });
+    });
+    </script>
+{% endblock %}
+
+

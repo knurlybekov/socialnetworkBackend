@@ -1,0 +1,114 @@
+{% load static %}
+<style>
+.search-input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px; /* Optional for rounded corners */
+    width: 250px; /* Adjust width as needed */
+}
+
+.search-input:focus {
+    outline: none; /* Remove default outline */
+    border-color: #4CAF50; /* Change border color on focus */
+}
+</style>
+<script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<html lang="en">
+  <head>
+  <style>
+      {% block css %}{% endblock %}
+  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}
+        AcadeBeat
+      {% endblock %}
+    </title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"  rel="stylesheet" />
+  </head>
+  <body>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/">GreenBag</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+    <div>
+    <form method="GET" action="{% url 'search_results' %}">
+        <input type="text" name="q" placeholder="Search for users..."
+               class="search-input">
+        <button type="submit" class="search-button">Search</button>
+    </form>
+</div>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ml-auto">
+      {% if user.is_authenticated %}
+        <li class="nav-item active">
+          <a class="nav-link" href="{% url 'user_profile' user_id=user.id %}">Hello, {{ user.get_full_name|default:user.email }}</a>
+        </li>
+          <li class="nav-item active">
+          <a class="nav-link" href="{% url 'create_post' %}">Create Post</a>
+          <a class="nav-link" href="{% url 'edit_profile' %}">Edit Profile</a>
+        </li>
+        <li class="nav-item">
+          <form action="{% url 'account_logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Logout</button>
+</form>
+        </li>
+      {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+        </li>
+          <li class="nav-item">
+          <a class="nav-link" href="{% url 'account_signup' %}">Sign Up</a>
+        </li>
+      {% endif %}
+{#      <li class="nav-item">#}
+{#        <a class="nav-link" href="{% url 'add_post' %}">Add Post</a>#}
+{#      </li>#}
+{#      <li class="nav-item">#}
+{#        <a class="nav-link" href="{% url 'contact' %}">Contact</a>#}
+{#      </li>#}
+    </ul>
+  </div>
+</nav>
+    <div class="container">{% block content %} {% endblock %}</div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" ></script>
+  <script src="{% static 'jquery-3.6.4.min.js' %}"></script>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script>
+
+      $('.like-btn').click(function(event) {
+    var button = $(this);
+    var postId = button.data('post-id');
+    var action = button.text().startsWith('Like') ? 'like' : 'unlike'; // Determine action
+
+    $.ajax({
+        url: '{% url "like_unlike_post" %}', // Use the URL name from urls.py
+        type: 'POST',
+        data: {
+            post_id: postId,
+            action: action,
+            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(data) {
+            if (data.success) {
+                button.text(action === 'like' ? 'Unlike (' + data.likes_count + ')' : 'Like (' + data.likes_count + ')');
+            } else {
+                console.error('Error:', data.error);
+            }
+        }
+    });
+});
+  </script>
+  {% block js %}{% endblock %}
+  </body>
+</html>

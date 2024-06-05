@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <h2>Home Page</h2>
+    <div class="post-list">
+    {% for post in posts %}
+        <div class="post-container">
+            <h3>{{ post.title }}</h3>
+            <p>By {{ post.author }}</p>
+            <p>{{ post.content|truncatewords:50 }} <a href="{% url 'post_detail' pk=post.pk %}">Read More</a></p>
+        <button class="like-btn" data-post-id="{{ post.id }}">
+        {% if request.user in post.likes.all %}
+            Unlike ({{ post.likes.count }})
+        {% else %}
+            Like ({{ post.likes.count }})
+        {% endif %}
+    </button>
+        </div>
+    {% empty %}
+        <p>No posts from followed users yet.</p>
+    {% endfor %}
+    </div>
+
+{% endblock %}
