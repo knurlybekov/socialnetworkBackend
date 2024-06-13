@@ -1,4 +1,17 @@
 Django==5.0.6
 psycopg2-binary==2.9.9
+psycopg2==2.9.9
 django-allauth==0.63.3
 django-taggit==5.0.1
+asgiref==3.8.1
+certifi==2024.6.2
+charset-normalizer==3.3.2
+python-dotenv~=1.0.1
+idna==3.7
+pillow==10.3.0
+pip==23.2.1
+requests==2.32.3
+setuptools==68.2.0
+sqlparse==0.5.0
+urllib3==2.2.1
+wheel==0.41.2
