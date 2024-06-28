@@ -28,6 +28,10 @@ class CustomUserManager(UserManager):
         return self._create_user(email, password, **extra_fields)
 
 
+AUTH_PROVIDERS = {"facebook": "facebook", "twitter": "twitter", "instagram": "instagram", "google": "google",
+                  "email": "email"}
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
     password = models.CharField(max_length=255)
@@ -42,6 +46,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     # subscriptions = models.ManyToManyField('self', through='UserSubscription', symmetrical=False,
     #                                        related_name='subscribers', through_fields=('subscriber', 'subscribed_to'))
     posts = models.IntegerField(default=0)
+    is_teacher = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    auth_provider = models.CharField(max_length=255, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

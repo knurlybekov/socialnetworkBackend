@@ -5,7 +5,14 @@
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://terraform-20240531041016225500000001.cx0iq6ci0ea9.us-east-1.rds.amazonaws.com:5432/postgresdb</jdbc-url>
+      <jdbc-url>jdbc:postgresql://terraform-20240614053350140800000001.cx0iq6ci0ea9.us-east-1.rds.amazonaws.com:5432/acadebeat</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+    <data-source source="LOCAL" name="acadebeatMine" uuid="a65ffc33-b9db-4f47-b9f2-a8297b5e006d">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://acadetest.c10ays4sqsm2.us-west-1.rds.amazonaws.com:5432/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

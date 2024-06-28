@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   web:
-    build: ./
+    build: .  # Build from the current directory
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./app/:/usr/src/app/
+      - ./:/usr/src/app  # Mount the entire project root
     ports:
-      - 8000:8000
+      - 8000:8000  # Use a less common port (optional)
     env_file:
       - ./.env.dev

@@ -18,7 +18,6 @@ print(os.environ)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -59,6 +58,9 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.yandex',
     'allauth.socialaccount.providers.weixin',
     'allauth.socialaccount.providers.digitalocean',
+    'corsheaders',
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'acadebeatmain.urls'
@@ -93,7 +96,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'acadebeat.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -101,13 +103,12 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'PORT': '5432',
-        'NAME': 'postgresdb',
-        'USER': 'username_for_testing1234',
-        'PASSWORD': 'A3gdLJ32980sljoaJLKmbvJDQP08304jhsldf',
-        'HOST': 'terraform-20240531041016225500000001.cx0iq6ci0ea9.us-east-1.rds.amazonaws.com',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': os.environ.get("PASSWORD"),
+        'HOST': os.environ.get("HOST"),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -126,7 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -149,3 +149,16 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:3000',
+)
+
+
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+
+)
+
+SOCIAL_AUTH_JSONFIELD_ENABLED = True
