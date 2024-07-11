@@ -2,6 +2,8 @@ from audioop import reverse
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import reverse
+from django.views import View
+from oauth2_provider.oauth2_validators import RefreshToken
 from rest_framework import viewsets, status, permissions, generics
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -12,18 +14,56 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .forms import CustomUserCreationForm, UserChangeForm, PostForm, CommentForm
-from .models import User, Post, UserFollowing, SomePost
+from .models import User, Post, UserFollowing, SomePost, Comment, Dialogue
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .serializers import UserSerializer, RegisterSerializer, LogoutSerializer
+from .serializers import UserSerializer, RegisterSerializer, LogoutSerializer, PostSerializer, CommentSerializer, \
+    DialogueSerializer
+
+
+class DialogueCreateAPIView(generics.CreateAPIView):
+    queryset = Dialogue.objects.all()
+    serializer_class = DialogueSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            dialogueId = serializer.validated_data['dialogueId']
+            existing_dialogue = Dialogue.objects.filter(dialogueId=dialogueId).first()
+
+            if existing_dialogue:
+                existing_dialogue.data = serializer.validated_data['data']
+                existing_dialogue.save()
+            else:
+                self.perform_create(serializer)
+
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+
+        except Dialogue.DoesNotExist:
+            return Response({'error': 'Dialogue not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
 def login(request):
-    user = get_object_or_404(User, email = request.data['email'])
+    user = get_object_or_404(User, email=request.data['email'])
     if not user.check_password(request.data['password']):
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     token, created = Token.objects.get_or_create(user=user)
@@ -44,11 +84,203 @@ def signup(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def logout_view(request):
+#     try:
+#         refresh_token = request.data["refresh_token"]
+#         token = RefreshToken(refresh_token)
+#         token.blacklist()
+#         return Response({"message": "Successfully logged out."}, status=205)
+#     except Exception as e:
+#         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def test_token(request):
     return Response("passed for {}".format(request.user.email))
+
+
+# Profile Update View
+class EditProfileView(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+# Search Results View
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def search_results(request):
+    query = request.GET.get('q', '')
+    if query:
+        results = User.objects.filter(Q(username__icontains=query) | Q(email__icontains=query))
+        serializer = UserSerializer(results, many=True)
+        return Response(serializer.data)
+    return Response([])
+
+
+# Follow and Unfollow Views
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def follow(request):
+    following_user_id = request.data.get('following_user_id')
+    try:
+        user_to_follow = User.objects.get(id=following_user_id)
+        _, created = UserFollowing.objects.get_or_create(user_id=request.user, following_user_id=user_to_follow)
+        return Response({'success': True, 'created': created})
+    except User.DoesNotExist:
+        return Response({'success': False, 'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def unfollow(request):
+    following_user_id = request.data.get('following_user_id')
+    try:
+        user_to_unfollow = User.objects.get(id=following_user_id)
+        UserFollowing.objects.filter(user_id=request.user, following_user_id=user_to_unfollow).delete()
+        return Response({'success': True})
+    except User.DoesNotExist:
+        return Response({'success': False, 'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Post Create and Detail Views
+class PostCreateView(generics.CreateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, postauthor=self.request.user)
+
+
+class PostDetailView(generics.RetrieveAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+# Comment Create View
+class CommentCreateView(generics.CreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        serializer.save(author=self.request.user, post=post)
+
+
+# Like and Unlike Post View
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def like_unlike_post(request):
+    post_id = request.data.get('post_id')
+    action = request.data.get('action')
+
+    try:
+        post = Post.objects.get(id=post_id)
+        if action == 'like':
+            post.likes.add(request.user)
+        elif action == 'unlike':
+            post.likes.remove(request.user)
+        return Response({'success': True, 'likes_count': post.likes.count()})
+    except Post.DoesNotExist:
+        return Response({'success': False, 'error': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Add Comment View
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def add_comment(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    serializer = CommentSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(author=request.user, post=post)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def retrieve_dialogues_from_storage(resource_id):
+    # Simulating dialogue storage (replace with your actual logic)
+    dialogue_storage = {
+        "1": [
+            {"name": "Mark", "imagePath": "...", "id": "3", "content": "Hello!"},
+            # ... more messages ...
+        ]
+    }
+    return dialogue_storage.get(resource_id, [])  # Return empty list if not found
+
+
+# class DialogueExampleViewSet(viewsets.ModelViewSet):
+#     queryset = DialogueExample.objects.all()
+#     serializer_class = DialogueExampleSerializer
+#     permission_classes = [permissions.IsAuthenticated]  # Or any other permission
+#
+#     def perform_create(self, serializer):
+#         serializer.save()  # You can add any custom logic here before saving
+#
+# class DialogueViewSet(viewsets.ViewSet):
+#     def create(self, request):
+#         serializer = DialogueSerializer(data=request.data)
+#         if serializer.is_valid():
+#             if hasattr(serializer, 'save'):
+#                 serializer.save()
+#             else:
+#              return Response(serializer.data, status=201)
+#         return Response(serializer.errors, status=400)
+
+    # def retrieve(self, request, pk=None):
+    #     try:
+    #         if hasattr(DialogueSerializer, 'Meta') and hasattr(DialogueSerializer.Meta, 'model'):
+    #             dialogue = DialogueSerializer.Meta.model.objects.get(pk=pk)
+    #         else:
+    #          serializer = DialogueSerializer(dialogue)
+    #          return Response(serializer.data)
+    #     except (Dialogue.DoesNotExist, KeyError):
+    #         return Response(status=status.HTTP_404_NOT_FOUND)
+    #
+    # def list(self, request):
+    #     resource_id = request.query_params.get('resourceId')
+    #     if resource_id:
+    #         try:
+    #             if hasattr(DialogueSerializer, 'Meta') and hasattr(DialogueSerializer.Meta, 'model'):
+    #                 dialogues = Dialogue.objects.filter(resource_id=resource_id)
+    #             else:
+    #                 # Your custom logic to retrieve dialogues without a model
+    #                 # For example:
+    #                 dialogues = retrieve_dialogues_from_storage(resource_id)
+    #
+    #             serializer = DialogueSerializer(dialogues, many=True)
+    #             return Response(serializer.data)
+    #         except KeyError:  # Handle the case where the resource_id doesn't exist
+    #             return Response(status=status.HTTP_404_NOT_FOUND)
+    #     else:
+    #         return Response({"error": "resourceId is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+# @api_view(['POST'])
+# def savejson(self, request):
+#     data = request.POST.get('data')
+#     if data:
+#         my_model = dialogjsonmodel.objects.create(data=data)
+#         return JsonResponse({'status': 'success', 'id': my_model.id})
+#     return JsonResponse({'status': 'error', 'message': 'No data provided'})
+#
+#
+# @api_view(['GET'])
+# def getjson(self, request, *args, **kwargs):
+#     my_model = dialogjsonmodel.objects.all().values('data', 'created_at', 'updated_at')
+#     data = list(my_model)
+#     return JsonResponse(data, safe=False)
 
 # class GoogleSocialAuthView(GenericAPIView):
 #     serializer_class = GoogleSocialAuthSerializer
@@ -59,13 +291,13 @@ def test_token(request):
 #         return Response(data, status=status.HTTP_200_OK)
 
 # def home(request):
-    # if request.user.is_authenticated:
-    #     followed_users = UserFollowing.objects.filter(user_id=request.user).values_list('following_user_id', flat=True)
-    #     posts = Post.objects.filter(postauthor_id__in=followed_users).order_by('-timestamp')
-    # else:
-    #     posts = Post.objects.all().order_by('-timestamp')  # Show all posts if not logged in
-    #
-    # return render(request, 'home.html', {'posts': posts})
+# if request.user.is_authenticated:
+#     followed_users = UserFollowing.objects.filter(user_id=request.user).values_list('following_user_id', flat=True)
+#     posts = Post.objects.filter(postauthor_id__in=followed_users).order_by('-timestamp')
+# else:
+#     posts = Post.objects.all().order_by('-timestamp')  # Show all posts if not logged in
+#
+# return render(request, 'home.html', {'posts': posts})
 
 # def signup(request):
 #     if request.method == 'POST':
@@ -235,7 +467,7 @@ def test_token(request):
 #         form = CommentForm()
 #     return render(request, 'add_comment.html', {'form': form, 'post': post})
 #
-
+#
 # def display_rich_text_tree(tree_data, indent=0):
 #     """Displays a rich text tree in a formatted way."""
 #
@@ -262,8 +494,8 @@ def test_token(request):
 #     elif node_type == "blockquote":
 #         for child in tree_data.get("content", []):
 #             display_rich_text_tree(child, indent + 2)  # Indent blockquote
-
-
+#
+#
 # def process_text_node(node):
 #     """Processes text nodes with marks."""
 #     text = node.get("text", "")
