@@ -24,6 +24,37 @@ from .serializers import UserSerializer, RegisterSerializer, LogoutSerializer, P
     DialogueSerializer
 
 
+def health(request):
+    # Basic Status Check (200 OK)
+    status = 200
+    response_data = {"status": "ok"}
+
+    # AWS-Specific Checks
+    try:
+        import boto3  # Check if Boto3 is available
+        response_data["aws_sdk"] = "ok"
+
+        # Check Database Connection (if using RDS)
+        from django.db import connection
+        if connection.is_usable():
+            response_data["database"] = "ok"
+        else:
+            status = 500  # Internal Server Error
+            response_data["database"] = "error"
+            response_data["message"] = "Database connection failed"
+
+        # Example: Check S3 Bucket Connection (if relevant)
+        s3 = boto3.client('s3')
+        s3.list_buckets()
+        response_data["s3"] = "ok"
+
+    except Exception as e:  # Catch general AWS errors
+        status = 500
+        response_data["aws_sdk"] = "error"
+        response_data["message"] = f"AWS error: {e}"
+
+    return JsonResponse(response_data, status=status)
+
 class DialogueCreateAPIView(generics.CreateAPIView):
     queryset = Dialogue.objects.all()
     serializer_class = DialogueSerializer

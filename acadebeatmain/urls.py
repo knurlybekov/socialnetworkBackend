@@ -15,6 +15,7 @@ from .views import EditProfileView, search_results, follow, unfollow, PostCreate
 
 urlpatterns = [
                   path('admin/', admin.site.urls),
+                  re_path('health/', views.health),
                   re_path('login', views.login),
                   path('dialogues/', DialogueCreateAPIView.as_view()),
                   re_path('signup', views.signup),
