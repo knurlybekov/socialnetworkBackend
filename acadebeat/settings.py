@@ -80,10 +80,10 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',  # django-oauth-toolkit >= 1.0.0
-        'drf_social_oauth2.authentication.SocialAuthentication',
-    ]
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
 }
 ROOT_URLCONF = 'acadebeatmain.urls'
 
@@ -164,6 +164,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',
+    'http://localhost:8080',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -172,10 +173,20 @@ AUTHENTICATION_BACKENDS = (
 )
 
 SOCIAL_AUTH_JSONFIELD_ENABLED = True
+#
+# OAUTH2_PROVIDER = {
+#     # ... other settings
+#     'ACCESS_TOKEN_EXPIRE_SECONDS': 3600,
+#     'REFRESH_TOKEN_EXPIRE_SECONDS': 2592000,
+#     'ACTIVATE_JWT': True,  # Enable JWTs
+# }
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),  # Example: 5 minutes
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),     # Example: 1 day
+#     # ... (other settings)
+# }
 
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),  # Example: 5 minutes
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),     # Example: 1 day
-    # ... (other settings)
-}
+# from oauth2_provider import settings as oauth2_settings
+#
+# # expires in 6 months
+# oauth2_settings.DEFAULTS['ACCESS_TOKEN_EXPIRE_SECONDS'] = 1.577e7

@@ -110,4 +110,5 @@ class UserFollowingSerializer(serializers.ModelSerializer):
 class DialogueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dialogue
-        fields = ['dialogueId', 'data']
+        fields = ['dialogueId', 'created_by', 'data']
+

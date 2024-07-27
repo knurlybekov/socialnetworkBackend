@@ -10,7 +10,7 @@ from django.contrib.auth.models import AbstractBaseUser, UserManager, Permission
 from django.views import View
 from pygments import highlight
 from pygments.formatters.html import HtmlFormatter
-from pygments.lexers.data import JsonLexer
+# from pygments.lexers.data import JsonLexer
 
 from taggit.managers import TaggableManager
 from acadebeat import settings
@@ -54,6 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_online = models.DateTimeField(auto_now=True)
     date_of_birth = models.DateField(null=True, blank=True)
     rating = models.IntegerField(default=0)
+    # following = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='followers', blank=True)
     # subscriptions = models.ManyToManyField('self', through='UserSubscription', symmetrical=False,
     #                                        related_name='subscribers', through_fields=('subscriber', 'subscribed_to'))
     posts = models.IntegerField(default=0)
@@ -115,58 +116,7 @@ class SomePost(models.Model):
     content = models.JSONField(encoder=DjangoJSONEncoder)
 
 
-# class dialogjsonmodel(models.Model):
-#     data = models.JSONField()
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-#
-#     def __str__(self):
-#         return str(self.id)
-
-
-# class DialogueMessage(models.Model):
-#     name = models.CharField(max_length=100)
-#     image_path = models.CharField(max_length=255)
-#     message_id = models.CharField(max_length=50)  # Adjust length as needed
-#     content = models.TextField()
-
 class Dialogue(models.Model):
     dialogueId = models.CharField(primary_key=True, unique=True, default=0 )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, default=2)
     data = models.JSONField()  # Store the entire JSON
-
-
-
-
-
-# class DialogueExample(models.Model):
-#     dialogue_id = models.BigAutoField(primary_key=True, editable=False)
-#     name = models.CharField(max_length=100)
-#     detail_text = models.TextField()
-#     detail_json = JSONField()  # requires Django-Mysql package
-#
-    # def detail_json_formatted(self):
-    #     # dump the json with indentation set
-    #
-    #     # example for detail_text TextField
-    #     # json_obj = json.loads(self.detail_text)
-    #     # data = json.dumps(json_obj, indent=2)
-    #
-    #     # with JSON field, no need to do .loads
-    #     data = json.dumps(self.detail_json, indent=2)
-    #
-    #     # format it with pygments and highlight it
-    #     formatter = HtmlFormatter(style='colorful')
-    #     response = highlight(data, JsonLexer(), formatter)
-    #
-    #     # include the style sheet
-    #     style = "<style>" + formatter.get_style_defs() + "</style><br/>"
-    #
-    #     return mark_safe(style + response)
-    #
-    # detail_json_formatted.short_description = 'Details Formatted'
-#
-#     class Meta:
-#         managed = True
-#         db_table = 'dialogue_example'
-#         verbose_name = 'Dialogue Example'
-#         verbose_name_plural = 'Dialogues Examples'
