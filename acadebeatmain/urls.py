@@ -10,7 +10,7 @@ from django.conf.urls.static import static
 
 from .views import EditProfileView, PostCreateView, PostDetailView, CommentCreateView, \
     DialogueCreateAPIView, DialogueRetrieveAPIView, DialogueListAPIView, \
-    GetUserProfileAPIView, LoginView, LogoutView, UserSearchView
+    GetUserProfileAPIView, LoginView, LogoutView, UserSearchView, AllPostsByUserId, PostListView, LikeUnlikePostView
 
 # router = DefaultRouter()
 # router.register(r'dialogues/<int:pk>/', DialogueRetrieveAPIView.as_view(), base_name='dialogue_detail')
@@ -25,7 +25,8 @@ urlpatterns = [
                   path('health/', views.health),
                   path('login', LoginView.as_view(), name='login'),
                   path('logout', LogoutView.as_view(), name='logout'),
-                  path('dialogues/<int:pk>/', DialogueRetrieveAPIView.as_view({'get': 'retrieve'}), name='dialogue-detail'),
+                  path('dialogues/<int:pk>/', DialogueRetrieveAPIView.as_view({'get': 'retrieve'}),
+                       name='dialogue-detail'),
                   path('dialogues/create/', DialogueCreateAPIView.as_view()),
                   path('dialogues/', DialogueListAPIView.as_view(), name='dialogue-list'),  # Added line
                   path('signup', views.signup),
@@ -33,11 +34,14 @@ urlpatterns = [
                   re_path('test_token', views.test_token),
                   re_path('profile/edit', EditProfileView.as_view(), name='edit_profile'),
                   re_path(r'^profile/edit/$', EditProfileView.as_view(), name='edit_profile'),
-                  path('search/<str:pk>', UserSearchView.as_view()),
+                  path('users/search', UserSearchView.as_view(), name='user_search'),
                   # re_path(r'^follow/$', follow, name='follow'),
                   # re_path(r'^unfollow/$', unfollow, name='unfollow'),
                   path('posts/create/', PostCreateView.as_view(), name='create_post'),
                   path('posts/<int:pk>/', PostDetailView.as_view(), name='post_detail'),
+                  path('posts/createdby/<int:pk>/', AllPostsByUserId.as_view(), name='all_posts_createdby'),
+                  path('posts/all', PostListView.as_view(), name='all_posts'),
+                  path('posts/<int:pk>/like/', LikeUnlikePostView.as_view(), name='like_unlike_post'),
                   # re_path(r'^posts/(?P<post_id>\d+)/comments/create/$', CommentCreateView.as_view(),
                   #         name='create_comment'),
                   path('dialogues/<int:pk>/download/', DialogueRetrieveAPIView.as_view({'get': 'download'})),

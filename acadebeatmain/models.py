@@ -54,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_online = models.DateTimeField(auto_now=True)
     date_of_birth = models.DateField(null=True, blank=True)
     rating = models.IntegerField(default=0)
-    # following = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='followers', blank=True)
+    # following_id = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='followers', blank=True)
     # subscriptions = models.ManyToManyField('self', through='UserSubscription', symmetrical=False,
     #                                        related_name='subscribers', through_fields=('subscriber', 'subscribed_to'))
     posts = models.IntegerField(default=0)
@@ -83,7 +83,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Post(models.Model):
     # author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')  # Use your User model
-    author = models.CharField(max_length=100)
+    # author = models.CharField(max_length=100)
     postauthor = models.ForeignKey(User, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=now, blank=True)
     title = models.CharField(max_length=200)

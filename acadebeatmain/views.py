@@ -21,6 +21,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.generics import GenericAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -277,15 +278,45 @@ class EditProfileView(generics.UpdateAPIView):
 #         return self.request.user
 
 
+# class UserSearchView(generics.ListAPIView):
+#     permission_classes = [permissions.IsAuthenticated]  # Requires authentication
+#     serializer_class = UserSerializer  # Specify the serializer for user data
+#
+#     def get_queryset(self):
+#         """Filters users based on the query parameter."""
+#         query = self.request.query_params.get('q', '')  # Get the 'q' query param
+#         if query:
+#             return User.objects.filter(
+#                 Q(username__icontains=query) |
+#                 Q(email__icontains=query) |
+#                 Q(first_name__icontains=query) |
+#                 Q(last_name__icontains=query)
+#             ).distinct()
+#         return User.objects.none()  # Return empty queryset if no query
+
+
+# search is very questionable
+class UserSearchPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class UserSearchView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    def serch(self, request):
-     query = request.GET.get('q', '')
-     if query:
-         results = User.objects.filter(Q(username__icontains=query) | Q(email__icontains=query))
-         serializer = UserSerializer(results, many=True)
-         return Response(serializer.data)
-     return Response([])
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+    pagination_class = UserSearchPagination
+
+    def get_queryset(self):
+        query = self.request.query_params.get('q', '')  # Get the 'q' query parameter
+        if not query:
+            return User.objects.all()
+
+        return User.objects.filter(
+            Q(username__icontains=query) |
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).distinct()
 
 # Search Results View
 # @api_view(['POST'])
@@ -338,6 +369,8 @@ class UserSearchView(generics.ListAPIView):
 #             return Response({'success': False, 'error': 'Relationship not found.'}, status=status.HTTP_404_NOT_FOUND)
 #         except PermissionError as e:
 #             return Response({'success': False, 'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
+
+# untested
 class FollowView(viewsets.ViewSet):
     queryset = User.objects.all()
 
@@ -367,24 +400,38 @@ class FollowView(viewsets.ViewSet):
 #         return Response({'success': False, 'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
-# Post Create and Detail Views
+# Post stuff, done
 class PostCreateView(generics.CreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, postauthor=self.request.user)
+        serializer.save(postauthor=self.request.user)
 
+
+class PostListView(generics.ListAPIView):
+    queryset = Post.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PostSerializer
+    def get_queryset(self):
+        return Post.objects.all()
+
+class AllPostsByUserId(generics.ListAPIView):
+    queryset = Post.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PostSerializer
+    def get_queryset(self):
+        return Post.objects.filter(postauthor=self.kwargs['pk'])
 
 class PostDetailView(generics.RetrieveAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_object(self):
-        return Dialogue.objects.get(pk=self.kwargs['pk'])
+        return Post.objects.get(pk=self.kwargs['pk'])
 
-# Comment Create View
+# Comment stuff, in work
 class CommentCreateView(generics.CreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
@@ -411,6 +458,8 @@ class CommentCreateView(generics.CreateAPIView):
 #         return Response({'success': True, 'likes_count': post.likes.count()})
 #     except Post.DoesNotExist:
 #         return Response({'success': False, 'error': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+# questionable and untested
 class LikeUnlikePostView(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Post.objects.all()

@@ -52,18 +52,19 @@ class LogoutSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
 
 class PostSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
     postauthor = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'author', 'postauthor', 'created_at']
+        fields = ['id', 'title', 'content', 'postauthor', 'created_at']
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
@@ -72,12 +73,11 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ['id', 'post', 'author', 'content', 'created_at']
 
+
 class UserFollowingSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFollowing
         fields = ['user_id', 'following_user_id']
-
-
 
 
 # class DialogueMessageSerializer(serializers.Serializer):
@@ -111,4 +111,3 @@ class DialogueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dialogue
         fields = ['dialogueId', 'created_by', 'data']
-
