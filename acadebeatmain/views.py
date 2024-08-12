@@ -1,6 +1,8 @@
 from audioop import reverse
 from datetime import timedelta
 from io import BytesIO
+
+from django.contrib.contenttypes.models import ContentType
 from pypdf import PdfWriter, PdfReader
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -26,14 +28,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .forms import CustomUserCreationForm, UserChangeForm, PostForm, CommentForm
-from .models import User, Post, UserFollowing, SomePost, Comment, Dialogue
+from .models import User, Post, SomePost, Comment, Dialogue, Subscription, Like
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from .serializers import UserSerializer, RegisterSerializer, LogoutSerializer, PostSerializer, CommentSerializer, \
-    DialogueSerializer, UserFollowingSerializer
+    DialogueSerializer, SubscriptionSerializer, LikeSerializer
 from django.contrib.auth import logout as django_logout
 from django.template.loader import get_template
 
@@ -97,6 +99,7 @@ class DialogueCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
     def create(self, request, *args, **kwargs):
         try:
             serializer = self.get_serializer(data=request.data)
@@ -156,6 +159,7 @@ class DialogueRetrieveAPIView(viewsets.ViewSet):
         dialogue = self.get_object(pk)
         serializer = self.serializer_class(dialogue)
         return Response(serializer.data)
+
     def download(self, request, pk=None):
         # Get the dialogue object
         dialogue = self.get_object(pk)
@@ -174,6 +178,7 @@ class DialogueRetrieveAPIView(viewsets.ViewSet):
 class GetUserProfileAPIView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserSerializer
+
     def get_object(self):
         return self.request.user
 
@@ -260,7 +265,6 @@ def test_token(request):
     return Response("passed for {}".format(request.user.email))
 
 
-
 class EditProfileView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
@@ -268,6 +272,8 @@ class EditProfileView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
 # Profile Update View
 # class EditProfileView(generics.UpdateAPIView):
 #     queryset = User.objects.all()
@@ -301,6 +307,7 @@ class UserSearchPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+
 class UserSearchView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserSerializer
@@ -317,6 +324,7 @@ class UserSearchView(generics.ListAPIView):
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
         ).distinct()
+
 
 # Search Results View
 # @api_view(['POST'])
@@ -371,21 +379,25 @@ class UserSearchView(generics.ListAPIView):
 #             return Response({'success': False, 'error': str(e)}, status=status.HTTP_403_FORBIDDEN)
 
 # untested
-class FollowView(viewsets.ViewSet):
-    queryset = User.objects.all()
-
-    def follow(self, request, pk):
-        own_profile = request.user.profile_set.first()
-        following_profile = User.objects.get(id=pk)
-        own_profile.following.add(following_profile)
-        return Response({'message': 'now you are following'}, status=status.HTTP_200_OK)
-
-    def unfollow(self, request, pk):
-        own_profile = request.user.profile_set.first()
-        following_profile = User.objects.get(id=pk)
-        own_profile.following.remove(following_profile)
-        return Response({'message': 'you are no longer following him'}, status=status.HTTP_200_OK)
+# class FollowView(viewsets.ViewSet):
+#     queryset = User.objects.all()
 #
+#     def follow(self, request, pk):
+#         serializer = FollowSerializer(data={'user_id': pk})
+#         if serializer.is_valid():
+#             response_data = serializer.follow(request.user)
+#             return Response(response_data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     def unfollow(self, request, pk):
+#         serializer = FollowSerializer(data={'user_id': pk})
+#         if serializer.is_valid():
+#             response_data = serializer.unfollow(request.user)
+#             return Response(response_data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+
+
 #
 #
 # @api_view(['POST'])
@@ -414,31 +426,37 @@ class PostListView(generics.ListAPIView):
     queryset = Post.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PostSerializer
+
     def get_queryset(self):
         return Post.objects.all()
+
 
 class AllPostsByUserId(generics.ListAPIView):
     queryset = Post.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PostSerializer
+
     def get_queryset(self):
         return Post.objects.filter(postauthor=self.kwargs['pk'])
+
 
 class PostDetailView(generics.RetrieveAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
+
     def get_object(self):
         return Post.objects.get(pk=self.kwargs['pk'])
 
-# Comment stuff, in work
+
+# Comment stuff, done. Need to show the comments under the posts
 class CommentCreateView(generics.CreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        post = get_object_or_404(Post, pk=self.kwargs['post_id'])
+        post = get_object_or_404(Post, pk=self.kwargs['pk'])
         serializer.save(author=self.request.user, post=post)
 
 
@@ -490,3 +508,63 @@ class LikeUnlikePostView(generics.UpdateAPIView):
 #         serializer.save(author=request.user, post=post)
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# subscriptions stuff, somehow works
+class CreateSubscriptionAPIView(generics.CreateAPIView):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        subscribed_to_user = get_object_or_404(User, pk=self.kwargs['pk'])
+
+        if Subscription.objects.filter(subscriber=self.request.user, subscribed_to=subscribed_to_user).exists():
+            return Response({'error': 'You are already subscribed to this user.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(subscriber=self.request.user, subscribed_to=subscribed_to_user)
+
+
+class DeleteSubscriptionAPIView(generics.DestroyAPIView):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        subscribed_to_user = get_object_or_404(User, pk=self.kwargs['pk'])
+        return get_object_or_404(Subscription, subscriber=self.request.user, subscribed_to=subscribed_to_user)
+
+
+class ListSubscriptionsAPIView(generics.ListAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Subscription.objects.filter(subscriber=self.request.user)
+
+
+class CreateLikeAPIView(generics.CreateAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+
+        content_type = get_object_or_404(ContentType, model=self.kwargs['content_type'])
+        obj = get_object_or_404(content_type.model_class(), pk=self.kwargs['object_id'])
+
+        if Like.objects.filter(user=self.request.user, content_type=content_type, object_id=obj.id).exists():
+            return Response({'error': 'You have already liked this.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(user=self.request.user, content_object=obj)
+
+
+class DeleteLikeAPIView(generics.DestroyAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    def get_object(self):
+        content_type = get_object_or_404(ContentType, model=self.kwargs['content_type'])
+        obj = get_object_or_404(content_type.model_class(), pk=self.kwargs['object_id'])
+        return get_object_or_404(Like, user=self.request.user, content_type=content_type, object_id=obj.id)

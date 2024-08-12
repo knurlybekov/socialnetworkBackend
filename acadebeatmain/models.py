@@ -1,8 +1,11 @@
 import json
 
-
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.fields.json import JSONField
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.http import JsonResponse
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
@@ -102,13 +105,13 @@ class Comment(models.Model):
     likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)  # Use your User model
 
 
-class UserFollowing(models.Model):
-    user_id = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="following", on_delete=models.CASCADE)
-    following_user_id = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="followers", on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user_id', 'following_user_id')  # Use the correct field names
+# class UserFollowing(models.Model):
+#     user_id = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="following", on_delete=models.CASCADE)
+#     following_user_id = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="followers", on_delete=models.CASCADE)
+#     created = models.DateTimeField(auto_now_add=True)
+#
+#     class Meta:
+#         unique_together = ('user_id', 'following_user_id')  # Use the correct field names
 
 
 class SomePost(models.Model):
@@ -117,6 +120,45 @@ class SomePost(models.Model):
 
 
 class Dialogue(models.Model):
-    dialogueId = models.CharField(primary_key=True, unique=True, default=0 )
+    dialogueId = models.CharField(primary_key=True, unique=True, default=0)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, default=2)
     data = models.JSONField()  # Store the entire JSON
+
+
+class Subscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscriptions')
+
+    subscribed_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscribers')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('subscriber', 'subscribed_to')
+    # class Profile(models.Model):
+#     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+#     following = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='followers', blank=True)
+#
+#
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created:
+#         Profile.objects.create(user=instance)
+#
+#
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def save_user_profile(sender, instance, **kwargs):
+#     instance.profile.save()
+
+# content types (8 - post, 9 - comment)
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # Generic Foreign Key to handle likes on both Posts and Comments
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'content_type', 'object_id')

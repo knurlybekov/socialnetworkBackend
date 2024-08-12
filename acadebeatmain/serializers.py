@@ -3,7 +3,7 @@ import os
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
-from .models import User, Comment, Post, UserFollowing, Dialogue
+from .models import User, Comment, Post, Dialogue, Subscription, Like
 
 
 # class GoogleSocialAuthSerializer(serializers.Serializer):
@@ -63,7 +63,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'postauthor', 'created_at']
+        fields = ['id', 'title', 'content', 'postauthor', 'created_at', 'likes']
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -71,13 +71,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'post', 'author', 'content', 'created_at']
+        fields = ['id', 'post', 'author', 'content', 'created_at', 'likes']
 
 
-class UserFollowingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserFollowing
-        fields = ['user_id', 'following_user_id']
+# class UserFollowingSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserFollowing
+#         fields = ['user_id', 'following_user_id']
 
 
 # class DialogueMessageSerializer(serializers.Serializer):
@@ -111,3 +111,39 @@ class DialogueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dialogue
         fields = ['dialogueId', 'created_by', 'data']
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ('subscribed_to',)  # Only need to specify the user being subscribed to
+
+    def create(self, validated_data):
+        # Ensure the subscriber is set to the current user from the context
+        validated_data['subscriber'] = self.context['request'].user
+        return Subscription.objects.create(**validated_data)
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ('content_type', 'object_id')
+
+# class FollowSerializer(serializers.Serializer):
+#     user_id = serializers.IntegerField()
+#
+#     def follow(self, request_user):
+#         try:
+#             following_user = User.objects.get(id=self.validated_data['user_id'])
+#             request_user.profile.following.add(following_user.profile)
+#             return {'message': 'Now you are following'}
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError('User not found')
+#
+#     def unfollow(self, request_user):
+#         try:
+#             following_user = User.objects.get(id=self.validated_data['user_id'])
+#             request_user.profile.following.remove(following_user.profile)
+#             return {'message': 'You are no longer following'}
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError('User not found')
