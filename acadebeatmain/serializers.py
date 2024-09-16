@@ -27,7 +27,7 @@ from .models import User, Comment, Post, Dialogue, Subscription, Like
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'date_of_birth')
+        fields = ('id', 'email', 'first_name', 'last_name', 'date_of_birth', 'image')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -63,7 +63,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'postauthor', 'created_at', 'likes']
+        fields = ['id', 'title', 'content', 'postauthor', 'created_at']
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -71,7 +71,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'post', 'author', 'content', 'created_at', 'likes']
+        fields = ['id', 'post', 'author', 'content', 'created_at']
 
 
 # class UserFollowingSerializer(serializers.ModelSerializer):
@@ -127,7 +127,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
-        fields = ('content_type', 'object_id')
+        fields = ['id', 'user', 'content_type', 'object_id']  # You might want to exclude 'user' if it's automatically set in the view
+        read_only_fields = ['id', 'user']  # Make 'id' and 'user' read-only
 
 # class FollowSerializer(serializers.Serializer):
 #     user_id = serializers.IntegerField()
@@ -147,3 +148,5 @@ class LikeSerializer(serializers.ModelSerializer):
 #             return {'message': 'You are no longer following'}
 #         except User.DoesNotExist:
 #             raise serializers.ValidationError('User not found')
+
+

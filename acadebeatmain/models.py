@@ -47,12 +47,16 @@ AUTH_PROVIDERS = {"facebook": "facebook", "twitter": "twitter", "instagram": "in
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    def user_directory_path(instance, filename):
+        # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+        return f'{instance.email}/profiles/{filename}'
+
     email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
     password = models.CharField(max_length=255)
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
     username = models.CharField(max_length=255, blank=True)
-    image = models.ImageField(upload_to='profiles/', blank=True, null=True)
+    image = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_online = models.DateTimeField(auto_now=True)
     date_of_birth = models.DateField(null=True, blank=True)
@@ -74,6 +78,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
+
     # def __str__(self):
     #     return self.username
     class Meta:
@@ -94,7 +99,28 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     tags = TaggableManager(blank=True)
     category = models.CharField(max_length=200)
-    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)  # Use your User model
+
+    def like(self, user):
+        """Likes the post on behalf of the given user."""
+        content_type = ContentType.objects.get_for_model(Post)
+        Like.objects.get_or_create(
+            user=user, content_type=content_type, object_id=self.id
+        )
+
+    def unlike(self, user):
+        """Unlikes the post on behalf of the given user."""
+        content_type = ContentType.objects.get_for_model(Post)
+        Like.objects.filter(
+            user=user, content_type=content_type, object_id=self.id
+        ).delete()
+
+    def is_liked_by(self, user):
+        """Checks if the post is liked by the given user."""
+        content_type = ContentType.objects.get_for_model(Post)
+        return Like.objects.filter(
+            user=user, content_type=content_type, object_id=self.id
+        ).exists()
+    # likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)  # Use your User model
 
 
 class Comment(models.Model):
@@ -102,7 +128,28 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)  # Use your User model
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)  # Use your User model
+
+    def like(self, user):
+        """Likes the comment on behalf of the given user."""
+        content_type = ContentType.objects.get_for_model(Comment)
+        Like.objects.get_or_create(
+            user=user, content_type=content_type, object_id=self.id
+        )
+
+    def unlike(self, user):
+        """Unlikes the comment on behalf of the given user."""
+        content_type = ContentType.objects.get_for_model(Comment)
+        Like.objects.filter(
+            user=user, content_type=content_type, object_id=self.id
+        ).delete()
+
+    def is_liked_by(self, user):
+        """Checks if the comment is liked by the given user."""
+        content_type = ContentType.objects.get_for_model(Comment)
+        return Like.objects.filter(
+            user=user, content_type=content_type, object_id=self.id
+        ).exists()
+    # likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)  # Use your User model
 
 
 # class UserFollowing(models.Model):
@@ -114,9 +161,9 @@ class Comment(models.Model):
 #         unique_together = ('user_id', 'following_user_id')  # Use the correct field names
 
 
-class SomePost(models.Model):
-    title = models.CharField(max_length=200)  # Optional title for the document
-    content = models.JSONField(encoder=DjangoJSONEncoder)
+# class SomePost(models.Model):
+#     title = models.CharField(max_length=200)  # Optional title for the document
+#     content = models.JSONField(encoder=DjangoJSONEncoder)
 
 
 class Dialogue(models.Model):
