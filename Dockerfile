@@ -94,4 +94,5 @@ COPY . .
 EXPOSE 8000
 
 # run gunicorn server
-CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "acadebeat.wsgi:application"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn acadebeat.wsgi:application --bind 0.0.0.0:$PORT --workers 3"]
+
