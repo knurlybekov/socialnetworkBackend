@@ -4,4 +4,4 @@ build:
   config:
     DOCKER_REGISTRY_URL: https://registry.hub.docker.com
 run:
-  web: gunicorn acadebeat.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+  web: gunicorn acadebeat.wsgi:application --bind :$PORT --workers 3 --threads 8
