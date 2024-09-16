@@ -1,0 +1,7 @@
+build:
+  docker:
+    web: Dockerfile
+  config:
+    DOCKER_REGISTRY_URL: https://registry.hub.docker.com
+run:
+  web: gunicorn acadebeat.wsgi:application --bind 0.0.0.0:8000 --workers 3
