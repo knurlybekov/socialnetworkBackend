@@ -1,12 +1,89 @@
 version: '3.8'
 
 services:
-  web:
-    build: .  # Build from the current directory
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./:/usr/src/app  # Mount the entire project root
-    ports:
-      - 8000:8000  # Use a less common port (optional)
+  acadebeat:
+    build:
+     context: .
+     dockerfile: Dockerfile
+    command: gunicorn acadebeat.wsgi:application --bind 0.0.0.0:8000 --workers 3
     env_file:
       - ./.env.dev
+    expose:
+      - 8000
+
+#version: '3.8'
+#
+#services:
+#  acadebeat:
+#    build:
+#     context: .
+#     dockerfile: Dockerfile
+#    command: gunicorn acadebeat.wsgi:application --bind 0.0.0.0:8000
+#    env_file:
+#      - ./.env.dev
+#    expose:
+#      - 8000
+#  nginx:
+#    build:
+#      context: ./nginx
+#      dockerfile: Dockerfile
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - acadebeat
+
+#version: '3'
+#services:
+#  web:
+#    build: .
+#    command: gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 acadebeat.wsgi:application
+#    volumes:
+#      - .:/app
+#    expose:
+#      - "8000"
+#    env_file:
+#      - .env.dev
+#  nginx:
+#    image: nginx:latest
+#    volumes:
+#      - ./cert.pem:/etc/ssl/certs/cert.pem
+#      - ./privkey.pem:/etc/ssl/certs/privkey.pem
+#      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    depends_on:
+#      - web
+
+
+#version: '3'  # Correct version format
+#
+#services:
+#  nginx:
+#    build: ./nginx
+#    ports:
+#      - 8687:80  # Mapping host port 8687 to container port 80
+#    depends_on:
+#      - acadebeat  # Ensure acadebeat starts before nginx
+#    restart: always  # Always restart container on failure or reboot
+#
+#  acadebeat:
+#    build: .
+#    command: >
+#      sh -c "python manage.py makemigrations && python manage.py migrate && gunicorn acadebeat.wsgi:application --bind 0.0.0.0:8000 --timeout 120"
+#    expose:
+#      - 8000  # This is for internal communication between services
+#    restart: always  # Restart if it fails or stops
+#    env_file:  # Use an .env file for environment variables
+#      - .env
+
+#version: '3.8'
+#
+#services:
+#  web:
+#    build: .
+#    command: gunicorn acadebeat.wsgi:application --bind 0.0.0.0:8000
+#    ports:
+#      - 8000:8000
+#    env_file:
+#      - ./.env.dev

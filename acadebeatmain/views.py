@@ -28,7 +28,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .forms import CustomUserCreationForm, UserChangeForm, PostForm, CommentForm
-from .models import User, Post, SomePost, Comment, Dialogue, Subscription, Like
+from .models import User, Post, Comment, Dialogue, Subscription, Like
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -38,6 +38,7 @@ from .serializers import UserSerializer, RegisterSerializer, LogoutSerializer, P
     DialogueSerializer, SubscriptionSerializer, LikeSerializer
 from django.contrib.auth import logout as django_logout
 from django.template.loader import get_template
+
 
 
 def generate_dialogue_pdf(dialogue_data):
@@ -219,7 +220,12 @@ class LoginView(APIView):
             login(request, user)
 
             # Generate OAuth2 token
-            application = Application.objects.get(name="authapp")  # Replace with your app name
+            try:
+                application = Application.objects.get(name="authapp")
+            except Application.DoesNotExist:
+                return Response({'detail': 'OAuth2 application not found'},
+                                status=500)  # Or another appropriate error status
+            # application = Application.objects.get(name="authapp")  # Replace with your app name
             expires = timezone.now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
             access_token = AccessToken.objects.create(
                 user=user,
@@ -324,6 +330,7 @@ class UserSearchView(generics.ListAPIView):
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
         ).distinct()
+
 
 
 # Search Results View
@@ -568,3 +575,13 @@ class DeleteLikeAPIView(generics.DestroyAPIView):
         content_type = get_object_or_404(ContentType, model=self.kwargs['content_type'])
         obj = get_object_or_404(content_type.model_class(), pk=self.kwargs['object_id'])
         return get_object_or_404(Like, user=self.request.user, content_type=content_type, object_id=obj.id)
+
+
+class PostLikesAPIView(generics.ListAPIView):
+    serializer_class = LikeSerializer
+
+    def get_queryset(self):
+        post_id = self.kwargs['post_id']
+        post = get_object_or_404(Post, id=post_id)
+        content_type = ContentType.objects.get_for_model(Post)
+        return Like.objects.filter(content_type=content_type, object_id=post.id)

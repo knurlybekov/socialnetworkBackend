@@ -11,7 +11,8 @@ from django.conf.urls.static import static
 from .views import EditProfileView, PostCreateView, PostDetailView, CommentCreateView, \
     DialogueCreateAPIView, DialogueRetrieveAPIView, DialogueListAPIView, \
     GetUserProfileAPIView, LoginView, LogoutView, UserSearchView, AllPostsByUserId, PostListView, LikeUnlikePostView, \
-    ListSubscriptionsAPIView, CreateSubscriptionAPIView, DeleteSubscriptionAPIView, CreateLikeAPIView, DeleteLikeAPIView
+    ListSubscriptionsAPIView, CreateSubscriptionAPIView, DeleteSubscriptionAPIView, CreateLikeAPIView, \
+    DeleteLikeAPIView, PostLikesAPIView
 
 # router = DefaultRouter()
 # router.register(r'dialogues/<int:pk>/', DialogueRetrieveAPIView.as_view(), base_name='dialogue_detail')
@@ -33,8 +34,7 @@ urlpatterns = [
                   path('signup', views.signup),
                   path('myprofile', GetUserProfileAPIView.as_view(), name='my-profile'),
                   re_path('test_token', views.test_token),
-                  re_path('profile/edit', EditProfileView.as_view(), name='edit_profile'),
-                  re_path(r'^profile/edit/$', EditProfileView.as_view(), name='edit_profile'),
+                  path('profile/edit', EditProfileView.as_view(), name='edit_profile'),
                   path('users/search', UserSearchView.as_view(), name='user_search'),
                   # re_path(r'^follow/$', follow, name='follow'),
                   # re_path(r'^unfollow/$', unfollow, name='unfollow'),
@@ -42,16 +42,17 @@ urlpatterns = [
                   path('posts/<int:pk>/', PostDetailView.as_view(), name='post_detail'),
                   path('posts/createdby/<int:pk>/', AllPostsByUserId.as_view(), name='all_posts_createdby'),
                   path('posts/all', PostListView.as_view(), name='all_posts'),
-                  path('posts/<int:pk>/like/', LikeUnlikePostView.as_view(), name='like_unlike_post'),
+                  # path('posts/<int:pk>/like/', LikeUnlikePostView.as_view(), name='like_unlike_post'),
                   path('posts/<int:pk>/comment/', CommentCreateView.as_view(), name='comment_post'),
+                  path('posts/<int:post_id>/likes', PostLikesAPIView.as_view(), name='likes'),
                   path('subscriptions/', ListSubscriptionsAPIView.as_view(), name='subscription-list'),
                   path('subscriptions/<int:pk>/', CreateSubscriptionAPIView.as_view(), name='subscription-create'),
                   path('subscriptions/<int:pk>/delete/', DeleteSubscriptionAPIView.as_view(),
                        name='subscription-delete'),
                   # re_path(r'^posts/(?P<post_id>\d+)/comments/create/$', CommentCreateView.as_view(),
                   #         name='create_comment'),
-                  path('<str:content_type>/<int:object_id>/like/', CreateLikeAPIView.as_view(), name='like-create'),
-                  path('<str:content_type>/<int:object_id>/unlike/', DeleteLikeAPIView.as_view(), name='like-delete'),
+                  path('<int:object_id>/like/', CreateLikeAPIView.as_view(), name='like-create'),
+                  path('<int:object_id>/unlike/', DeleteLikeAPIView.as_view(), name='like-delete'),
                   path('dialogues/<int:pk>/download/', DialogueRetrieveAPIView.as_view({'get': 'download'})),
                   # re_path(r'^posts/like/$', like_unlike_post, name='like_unlike_post'),
                   # re_path(r'^posts/(?P<pk>\d+)/comments/add/$', add_comment, name='add_comment'),
